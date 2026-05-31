@@ -64,6 +64,6 @@ cd practic2026detect
 ```bash
 pip install ultralytics opencv-python Pillow numpy sentence-transformers scikit-learn deeplake
 ```
-Запускаем файл
+### Запускаем файл
 python detection.py
 
