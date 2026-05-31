@@ -23,7 +23,7 @@
 
 **Вот как это выглядит в структуре:**
 
-- `rag_detection.py` — около 550 строк, основная программа
+- `detection.py` — 643 строчки, основная программа
 - `best.pt` — дообученная модель (дообучил через Google Colab)
 - `dataset` — датасет из вручную собранных 100 фотографий
 - `itog_sukho_detect.py` — абсолютно сухой код со строгим выполнением задания, без визуала
@@ -55,7 +55,15 @@
 - **4 ГБ оперативки** (хватит для работы на CPU)
 - ИНФОРМАЦИЯ ДОПОЛНЯЕТСЯ
 
+### ПОРЯДОК ЗАПУСКА
+Клонируем репозиторий
+git clone https://github.com/dezmond999/practic2026detect
+cd practic2026detect
 ### Ставим библиотеки
 ------------------
 ```bash
 pip install ultralytics opencv-python Pillow numpy sentence-transformers scikit-learn deeplake
+```
+Запускаем файл
+python detection.py
+
