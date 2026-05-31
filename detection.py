@@ -16,105 +16,60 @@ class DroneRAGSystem:
     def __init__(self, root):
         self.root = root
         self.root.title("🚁 Мультимодальная RAG-система | Детекция машин + База знаний о БПЛА")
-        self.root.geometry("1500x900")
+        self.root.geometry("1400x800")
+        self.root.minsize(1000, 600)
         self.root.configure(bg='#1a1a2e')
         
-        # ===== МОДЕЛИ =====
+        # Модели
         self.model_yolo = None
-        self.model_embedding = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+        self.model_embedding = SentenceTransformer('paraphrase-MiniLM-L3-v2')
         
-        # ===== ДАННЫЕ =====
+        # Данные
         self.visdrone_ds = None
         self.original_image = None
         self.original_image_rgb = None
         self.detections = []
         self.hover_detection = None
         self.current_source = None
-        self.tooltip_window = None  # Для всплывающей подсказки
+        self.tooltip_window = None
+        self.show_detections_mode = True
         
-        # ===== ТЕКСТОВАЯ БАЗА ЗНАНИЙ О БПЛА =====
+        # База знаний о дронах
         self.drone_knowledge = [
-            {
-                "id": 1,
-                "name": "DJI Matrice 300 RTK",
-                "description": "Профессиональный дрон для мониторинга грузовиков и автопарков. Оснащён тепловизором и ИИ-детекцией.",
-                "specs": "Время полёта: 55 мин, Макс. скорость: 82 км/ч, Вес: 3.6 кг",
-                "best_for": ["truck", "bus", "van"],
-                "price_range": "высокий"
-            },
-            {
-                "id": 2,
-                "name": "Autel EVO II Pro",
-                "description": "Отлично подходит для съёмки легковых автомобилей. Компактный складной дрон с 6K камерой.",
-                "specs": "Время полёта: 40 мин, Макс. скорость: 72 км/ч, Вес: 1.1 кг",
-                "best_for": ["car"],
-                "price_range": "средний"
-            },
-            {
-                "id": 3,
-                "name": "Parrot Anafi USA",
-                "description": "Специализированный дрон для поиска мотоциклов и малогабаритных объектов. Компактный и складной.",
-                "specs": "Время полёта: 32 мин, Макс. скорость: 55 км/ч, Вес: 0.5 кг",
-                "best_for": ["motor", "bicycle"],
-                "price_range": "средний"
-            },
-            {
-                "id": 4,
-                "name": "DJI Mavic 3 Enterprise",
-                "description": "Универсальный дрон для обнаружения любых транспортных средств. Оснащён зум-камерой и тепловизором.",
-                "specs": "Время полёта: 45 мин, Макс. скорость: 75 км/ч, Вес: 0.9 кг",
-                "best_for": ["car", "truck", "bus", "van", "motor"],
-                "price_range": "высокий"
-            },
-            {
-                "id": 5,
-                "name": "DJI Mini 4 Pro",
-                "description": "Лёгкий дрон для мониторинга легковых автомобилей и мотоциклов. Идеален для быстрых вылетов.",
-                "specs": "Время полёта: 34 мин, Макс. скорость: 57 км/ч, Вес: 0.25 кг",
-                "best_for": ["car", "motor"],
-                "price_range": "низкий"
-            },
-            {
-                "id": 6,
-                "name": "Autel Dragonfish",
-                "description": "Профессиональный дрон с вертикальным взлётом для длительного мониторинга автопарков и грузовых перевозок.",
-                "specs": "Время полёта: 120 мин, Макс. скорость: 108 км/ч, Вес: 2.5 кг",
-                "best_for": ["truck", "bus", "van"],
-                "price_range": "высокий"
-            }
+            {"id": 1, "name": "DJI Matrice 300 RTK", "description": "Профессиональный дрон для мониторинга грузовиков и автопарков. Оснащён тепловизором и ИИ-детекцией.", "specs": "Время полёта: 55 мин, Макс. скорость: 82 км/ч, Вес: 3.6 кг", "best_for": ["truck", "bus", "van"]},
+            {"id": 2, "name": "Autel EVO II Pro", "description": "Отлично подходит для съёмки легковых автомобилей. Компактный складной дрон с 6K камерой.", "specs": "Время полёта: 40 мин, Макс. скорость: 72 км/ч, Вес: 1.1 кг", "best_for": ["car"]},
+            {"id": 3, "name": "Parrot Anafi USA", "description": "Специализированный дрон для поиска мотоциклов и малогабаритных объектов. Компактный и складной.", "specs": "Время полёта: 32 мин, Макс. скорость: 55 км/ч, Вес: 0.5 кг", "best_for": ["motor"]},
+            {"id": 4, "name": "DJI Mavic 3 Enterprise", "description": "Универсальный дрон для обнаружения любых транспортных средств. Оснащён зум-камерой и тепловизором.", "specs": "Время полёта: 45 мин, Макс. скорость: 75 км/ч, Вес: 0.9 кг", "best_for": ["car", "truck", "bus", "van", "motor"]},
+            {"id": 5, "name": "DJI Mini 4 Pro", "description": "Лёгкий дрон для мониторинга легковых автомобилей и мотоциклов. Идеален для быстрых вылетов.", "specs": "Время полёта: 34 мин, Макс. скорость: 57 км/ч, Вес: 0.25 кг", "best_for": ["car", "motor"]},
+            {"id": 6, "name": "Autel Dragonfish", "description": "Профессиональный дрон с вертикальным взлётом для длительного мониторинга автопарков и грузовых перевозок.", "specs": "Время полёта: 120 мин, Макс. скорость: 108 км/ч, Вес: 2.5 кг", "best_for": ["truck", "bus", "van"]}
         ]
         
-        # Предвычисляем эмбеддинги
         self.drone_embeddings = []
-        self.drone_documents = []
         for drone in self.drone_knowledge:
             text = f"{drone['name']} {drone['description']} {drone['specs']}"
-            self.drone_documents.append(text)
             self.drone_embeddings.append(self.model_embedding.encode(text))
         
-        # ===== ПАРАМЕТРЫ ИНТЕРФЕЙСА =====
+        # Параметры интерфейса
         self.zoom_level = 1.0
         self.zoom_min = 0.5
         self.zoom_max = 5.0
         self.pan_x, self.pan_y = 0, 0
         self.pan_start_x, self.pan_start_y = 0, 0
+        self.fit_to_window = True
         
-        self.status_var = tk.StringVar(value="🔄 Загрузка YOLO модели и эмбеддеров...")
+        self.status_var = tk.StringVar(value="🔄 Загрузка YOLO модели...")
         
-        # Загрузка
         self.load_models()
-        self.load_visdrone_dataset()
         self.setup_ui()
         self.check_models_ready()
         self.setup_bindings()
-    
-    # ========== ЗАГРУЗКА МОДЕЛЕЙ ==========
+        self.load_visdrone_dataset()
     
     def load_models(self):
         def _load():
             try:
                 self.model_yolo = YOLO("best.pt")
-                self.status_var.set("✅ Модели готовы! Классы: car, van, truck, bus, motor")
+                self.status_var.set("✅ Модель готова! Классы: car, van, truck, bus, motor")
             except Exception as e:
                 self.status_var.set(f"⚠️ Ошибка YOLO: {str(e)[:50]}...")
         threading.Thread(target=_load, daemon=True).start()
@@ -123,7 +78,7 @@ class DroneRAGSystem:
         def _load():
             try:
                 self.visdrone_ds = deeplake.load('hub://activeloop/visdrone-det-train')
-                print(f"✅ VisDrone датасет готов: {len(self.visdrone_ds)} изображений")
+                print(f"✅ VisDrone датасет готов")
             except Exception as e:
                 self.visdrone_ds = None
         threading.Thread(target=_load, daemon=True).start()
@@ -133,29 +88,23 @@ class DroneRAGSystem:
             return
         self.root.after(500, self.check_models_ready)
     
-    # ========== ИНТЕРФЕЙС ==========
-    
     def setup_ui(self):
         main_frame = tk.Frame(self.root, bg='#1a1a2e')
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # Левая панель
         left_panel = tk.Frame(main_frame, bg='#16213e', width=380)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
         left_panel.pack_propagate(False)
         
-        # Правая панель
         right_panel = tk.Frame(main_frame, bg='#0f3460')
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
-        # ===== ЛЕВАЯ ПАНЕЛЬ =====
-        # Заголовок
+        # Левая панель
         tk.Label(left_panel, text="🚁 MULTIMODAL RAG SYSTEM", 
                 font=('Arial', 14, 'bold'), bg='#16213e', fg='#e94560').pack(pady=15)
         tk.Label(left_panel, text="Детекция машин + База знаний о БПЛА", 
                 font=('Arial', 9), bg='#16213e', fg='#aaa').pack(pady=(0, 15))
         
-        # Раздел 1: Загрузка изображений
         tk.Label(left_panel, text="📸 1. ЗАГРУЗИТЕ ИЗОБРАЖЕНИЕ", 
                 font=('Arial', 10, 'bold'), bg='#16213e', fg='#e94560').pack(anchor='w', padx=20, pady=(10,5))
         
@@ -170,14 +119,12 @@ class DroneRAGSystem:
                  font=('Arial', 10, 'bold'), bg='#2c3e66', fg='white',
                  command=self.load_random_visdrone, height=1).pack(fill=tk.X, pady=2)
         
-        # Раздел 2: Детекция
         tk.Label(left_panel, text="🔍 2. ДЕТЕКЦИЯ МАШИН", 
                 font=('Arial', 10, 'bold'), bg='#16213e', fg='#e94560').pack(anchor='w', padx=20, pady=(15,5))
         
         params_frame = tk.Frame(left_panel, bg='#16213e')
         params_frame.pack(fill=tk.X, padx=20, pady=5)
         
-        # Порог уверенности
         conf_frame = tk.Frame(params_frame, bg='#16213e')
         conf_frame.pack(fill=tk.X, pady=5)
         tk.Label(conf_frame, text="Порог уверенности:", bg='#16213e', fg='white').pack(side=tk.LEFT)
@@ -186,7 +133,11 @@ class DroneRAGSystem:
                 orient=tk.HORIZONTAL, variable=self.conf_var,
                 bg='#16213e', fg='white', highlightthickness=0).pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=5)
         
-        # Размер тайла
+        self.tiling_enabled = tk.BooleanVar(value=False)
+        tk.Checkbutton(params_frame, text="✅ Использовать тайлинг (для мелких машин)",
+                      variable=self.tiling_enabled, bg='#16213e', fg='white',
+                      selectcolor='#16213e').pack(anchor='w', pady=5)
+        
         tile_frame = tk.Frame(params_frame, bg='#16213e')
         tile_frame.pack(fill=tk.X, pady=5)
         tk.Label(tile_frame, text="Размер тайла:", bg='#16213e', fg='white').pack(side=tk.LEFT)
@@ -195,7 +146,6 @@ class DroneRAGSystem:
                                       values=[640, 800, 1024, 1280], width=8, state='readonly')
         self.tile_menu.pack(side=tk.RIGHT, padx=5)
         
-        # Перекрытие
         overlap_frame = tk.Frame(params_frame, bg='#16213e')
         overlap_frame.pack(fill=tk.X, pady=5)
         tk.Label(overlap_frame, text="Перекрытие тайлов:", bg='#16213e', fg='white').pack(side=tk.LEFT)
@@ -204,18 +154,19 @@ class DroneRAGSystem:
                 orient=tk.HORIZONTAL, variable=self.overlap_var,
                 bg='#16213e', fg='white', highlightthickness=0).pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=5)
         
-        # Режим тайлинга
-        self.tiling_enabled = tk.BooleanVar(value=False)
-        tk.Checkbutton(params_frame, text="Использовать тайлинг (для мелких машин)",
-                      variable=self.tiling_enabled, bg='#16213e', fg='white',
-                      selectcolor='#16213e').pack(anchor='w', pady=5)
+        detect_frame = tk.Frame(left_panel, bg='#16213e')
+        detect_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        self.detect_btn = tk.Button(left_panel, text="🔍 НАЙТИ МАШИНЫ", 
+        self.detect_btn = tk.Button(detect_frame, text="🔍 НАЙТИ МАШИНЫ", 
                                    font=('Arial', 11, 'bold'), bg='#e94560', fg='white',
                                    command=self.detect_vehicles, height=1, state='disabled')
-        self.detect_btn.pack(fill=tk.X, padx=20, pady=10)
+        self.detect_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
         
-        # Раздел 3: RAG запрос
+        self.original_btn = tk.Button(detect_frame, text="🖼️ ПОКАЗАТЬ ОРИГИНАЛ", 
+                                     font=('Arial', 11, 'bold'), bg='#1a5c5e', fg='white',
+                                     command=self.show_original, height=1, state='disabled')
+        self.original_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
+        
         tk.Label(left_panel, text="💬 3. ЗАПРОС К БАЗЕ ЗНАНИЙ О БПЛА", 
                 font=('Arial', 10, 'bold'), bg='#16213e', fg='#e94560').pack(anchor='w', padx=20, pady=(15,5))
         
@@ -235,7 +186,6 @@ class DroneRAGSystem:
                  font=('Arial', 10, 'bold'), bg='#1a5c5e', fg='white',
                  command=self.rag_search_by_detection).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
         
-        # Раздел 4: Результаты RAG
         tk.Label(left_panel, text="📡 РЕЗУЛЬТАТЫ RAG", 
                 font=('Arial', 10, 'bold'), bg='#16213e', fg='#e94560').pack(anchor='w', padx=20, pady=(15,5))
         
@@ -244,21 +194,10 @@ class DroneRAGSystem:
         self.rag_result.pack(fill=tk.X, padx=20, pady=5)
         self.rag_result.insert("1.0", "Результаты поиска появятся здесь...")
         
-        # Раздел 5: Статистика
-        tk.Label(left_panel, text="📊 4. СТАТИСТИКА ДЕТЕКЦИИ", 
-                font=('Arial', 10, 'bold'), bg='#16213e', fg='#e94560').pack(anchor='w', padx=20, pady=(15,5))
-        
-        self.stats_text = tk.Text(left_panel, height=6, bg='#0f3460', fg='white',
-                                  font=('Consolas', 9), relief=tk.FLAT, wrap=tk.WORD)
-        self.stats_text.pack(fill=tk.X, padx=20, pady=5)
-        self.stats_text.insert("1.0", "Ожидание загрузки...")
-        self.stats_text.config(state=tk.DISABLED)
-        
-        # Статус
         tk.Label(left_panel, textvariable=self.status_var, bg='#16213e', 
                 fg='#aaa', font=('Arial', 8)).pack(side=tk.BOTTOM, pady=10)
         
-        # ===== ПРАВАЯ ПАНЕЛЬ =====
+        # Правая панель
         canvas_container = tk.Frame(right_panel, bg='#0f3460')
         canvas_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -274,7 +213,16 @@ class DroneRAGSystem:
         v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
-        # Подсказка
+        stats_frame = tk.Frame(right_panel, bg='#1a1a2e', bd=2, relief=tk.RIDGE)
+        stats_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=(0, 10))
+        
+        tk.Label(stats_frame, text="📊 СТАТИСТИКА ДЕТЕКЦИИ", 
+                font=('Arial', 9, 'bold'), bg='#1a1a2e', fg='#e94560').pack(anchor='w', padx=5, pady=2)
+        
+        self.stats_var = tk.StringVar(value="Ожидание загрузки...")
+        tk.Label(stats_frame, textvariable=self.stats_var, bg='#1a1a2e', fg='#00ff00',
+                font=('Consolas', 10, 'bold'), anchor='w', justify=tk.LEFT).pack(fill=tk.X, padx=5, pady=2)
+        
         tk.Label(right_panel, text="💡 Управление: Ctrl+колесо - зум | Правая кнопка - панорамирование | Наведите курсор на машину — появится подсказка",
                 bg='#0f3460', fg='#aaa', font=('Arial', 9)).pack(side=tk.BOTTOM, pady=5)
     
@@ -291,40 +239,11 @@ class DroneRAGSystem:
         self.canvas.bind("<ButtonPress-3>", self.start_pan)
         self.canvas.bind("<B3-Motion>", self.do_pan)
     
-    # ========== ВСПЛЫВАЮЩАЯ ПОДСКАЗКА ==========
-    
-    def show_tooltip(self, x, y, text):
-        """Показать всплывающую подсказку рядом с курсором"""
-        self.hide_tooltip()
-        
-        # Создаём окно-подсказку
-        self.tooltip_window = tk.Toplevel(self.root)
-        self.tooltip_window.wm_overrideredirect(True)  # Без рамки
-        self.tooltip_window.wm_geometry(f"+{x+15}+{y+10}")
-        self.tooltip_window.configure(bg='#1a1a2e')
-        
-        # Фрейм с тенью
-        frame = tk.Frame(self.tooltip_window, bg='#e94560', padx=1, pady=1)
-        frame.pack()
-        inner = tk.Frame(frame, bg='#16213e', padx=10, pady=5)
-        inner.pack()
-        
-        # Иконка и текст
-        tk.Label(inner, text="🚗", font=('Arial', 14), bg='#16213e', fg='#e94560').pack(side=tk.LEFT, padx=(0,5))
-        tk.Label(inner, text=text, font=('Arial', 9, 'bold'), bg='#16213e', fg='#ffd700', justify=tk.LEFT).pack(side=tk.LEFT)
-        
-        # Автоскрытие через 2 секунды
-        self.tooltip_id = self.root.after(2000, self.hide_tooltip)
-    
-    def hide_tooltip(self, event=None):
-        """Скрыть всплывающую подсказку"""
-        if self.tooltip_window:
-            self.tooltip_window.destroy()
-            self.tooltip_window = None
-        if hasattr(self, 'tooltip_id'):
-            self.root.after_cancel(self.tooltip_id)
-    
-    # ========== ЗАГРУЗКА ИЗОБРАЖЕНИЙ ==========
+    def show_original(self):
+        if self.original_image_rgb is None:
+            return
+        self.show_detections_mode = not self.show_detections_mode
+        self.update_display()
     
     def load_image(self):
         file_path = filedialog.askopenfilename(
@@ -367,18 +286,16 @@ class DroneRAGSystem:
         self.original_image_rgb = cv2.cvtColor(self.original_image, cv2.COLOR_BGR2RGB)
         self.detections = []
         self.hover_detection = None
+        self.show_detections_mode = True
+        self.fit_to_window = True
         self.reset_view()
         
         self.detect_btn.config(state='normal')
+        self.original_btn.config(state='normal')
         self.status_var.set(f"✅ {self.current_source}")
         
-        self.stats_text.config(state=tk.NORMAL)
-        self.stats_text.delete("1.0", tk.END)
-        self.stats_text.insert("1.0", "Нажмите 'НАЙТИ МАШИНЫ'")
-        self.stats_text.config(state=tk.DISABLED)
+        self.update_stats()
         self.update_display()
-    
-    # ========== ДЕТЕКЦИЯ ==========
     
     def detect_vehicles(self):
         if self.original_image is None:
@@ -401,6 +318,7 @@ class DroneRAGSystem:
                     detections = self.run_detection_simple(self.original_image, conf_threshold=self.conf_var.get())
                 
                 self.detections = detections
+                self.show_detections_mode = True
                 self.update_stats()
                 self.update_display()
                 
@@ -513,10 +431,7 @@ class DroneRAGSystem:
                 keep.append(det)
         return keep
     
-    # ========== RAG ПОИСК ==========
-    
     def rag_search(self):
-        """Поиск в базе знаний по текстовому запросу"""
         query = self.query_text.get("1.0", tk.END).strip()
         if not query:
             self.rag_result.delete("1.0", tk.END)
@@ -545,7 +460,6 @@ class DroneRAGSystem:
         self.status_var.set("✅ Поиск завершён")
     
     def rag_search_by_detection(self):
-        """Поиск в базе знаний по типам обнаруженных машин"""
         if not self.detections:
             self.rag_result.delete("1.0", tk.END)
             self.rag_result.insert("1.0", "Сначала выполните детекцию машин!")
@@ -584,15 +498,9 @@ class DroneRAGSystem:
         self.rag_result.insert("1.0", result)
         self.status_var.set("✅ Рекомендации по БПЛА готовы")
     
-    # ========== СТАТИСТИКА ==========
-    
     def update_stats(self):
-        self.stats_text.config(state=tk.NORMAL)
-        self.stats_text.delete("1.0", tk.END)
-        
         if not self.detections:
-            self.stats_text.insert("1.0", "❌ Машины не найдены")
-            self.stats_text.config(state=tk.DISABLED)
+            self.stats_var.set("❌ Машины не найдены")
             return
         
         cars = sum(1 for d in self.detections if d['label'] == 'car')
@@ -600,49 +508,77 @@ class DroneRAGSystem:
         trucks = sum(1 for d in self.detections if d['label'] == 'truck')
         buses = sum(1 for d in self.detections if d['label'] == 'bus')
         motors = sum(1 for d in self.detections if d['label'] == 'motor')
+        total = len(self.detections)
         
-        stats = f"Результаты детекции:\n"
-        stats += f"🚗 Легковых: {cars}\n"
-        stats += f"🚐 Фургонов: {vans}\n"
-        stats += f"🚚 Грузовиков: {trucks}\n"
-        stats += f"🚌 Автобусов: {buses}\n"
-        stats += f"🏍️ Мотоциклов: {motors}\n"
-        stats += f"\n📈 Всего: {len(self.detections)}"
-        
-        self.stats_text.insert("1.0", stats)
-        self.stats_text.config(state=tk.DISABLED)
-    
-    # ========== ОТОБРАЖЕНИЕ И ВЗАИМОДЕЙСТВИЕ ==========
+        stats = f"🚗 Легковых:{cars}  🚐 Фургонов:{vans}  🚚 Грузовиков:{trucks}  🚌 Автобусов:{buses}  🏍️ Мотоциклов:{motors}  📈 Всего:{total}"
+        self.stats_var.set(stats)
     
     def update_display(self):
         if self.original_image_rgb is None:
             return
         
         h, w = self.original_image_rgb.shape[:2]
-        new_w, new_h = int(w * self.zoom_level), int(h * self.zoom_level)
-        display = cv2.resize(self.original_image_rgb, (new_w, new_h))
+        canvas_w = self.canvas.winfo_width()
+        canvas_h = self.canvas.winfo_height()
         
-        for det in self.detections:
-            x1, y1, x2, y2 = det['bbox']
-            x1, y1 = int(x1 * self.zoom_level), int(y1 * self.zoom_level)
-            x2, y2 = int(x2 * self.zoom_level), int(y2 * self.zoom_level)
-            
-            color = det['color']
-            cv2.rectangle(display, (x1, y1), (x2, y2), color, 2)
-            text = f"{det['label']} {det['confidence']:.2f}"
-            cv2.putText(display, text, (x1, y1-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-            
-            if self.hover_detection == det:
-                cv2.rectangle(display, (x1, y1), (x2, y2), (255, 255, 0), 3)
+        if self.fit_to_window and canvas_w > 1 and canvas_h > 1:
+            scale_w = canvas_w / w
+            scale_h = canvas_h / h
+            self.zoom_level = min(scale_w, scale_h) * 0.95
+            self.pan_x = 0
+            self.pan_y = 0
+            self.fit_to_window = False
+        
+        new_w, new_h = int(w * self.zoom_level), int(h * self.zoom_level)
+        
+        if self.show_detections_mode and self.detections:
+            display = cv2.resize(self.original_image_rgb, (new_w, new_h))
+            for det in self.detections:
+                x1, y1, x2, y2 = det['bbox']
+                x1, y1 = int(x1 * self.zoom_level), int(y1 * self.zoom_level)
+                x2, y2 = int(x2 * self.zoom_level), int(y2 * self.zoom_level)
+                
+                color = det['color']
+                cv2.rectangle(display, (x1, y1), (x2, y2), color, 2)
+                text = f"{det['label']} {det['confidence']:.2f}"
+                cv2.putText(display, text, (x1, y1-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                
+                if self.hover_detection == det:
+                    cv2.rectangle(display, (x1, y1), (x2, y2), (255, 255, 0), 3)
+        else:
+            display = cv2.resize(self.original_image_rgb, (new_w, new_h))
         
         self.current_photo = ImageTk.PhotoImage(Image.fromarray(display))
         self.canvas.delete("all")
         self.canvas.config(scrollregion=(0, 0, new_w, new_h))
         self.canvas.create_image(self.pan_x, self.pan_y, anchor='nw', image=self.current_photo)
     
+    def show_tooltip(self, x, y, text):
+        self.hide_tooltip()
+        self.tooltip_window = tk.Toplevel(self.root)
+        self.tooltip_window.wm_overrideredirect(True)
+        self.tooltip_window.wm_geometry(f"+{x+15}+{y+10}")
+        self.tooltip_window.configure(bg='#1a1a2e')
+        
+        frame = tk.Frame(self.tooltip_window, bg='#e94560', padx=1, pady=1)
+        frame.pack()
+        inner = tk.Frame(frame, bg='#16213e', padx=10, pady=5)
+        inner.pack()
+        
+        tk.Label(inner, text="🚗", font=('Arial', 14), bg='#16213e', fg='#e94560').pack(side=tk.LEFT, padx=(0,5))
+        tk.Label(inner, text=text, font=('Arial', 9, 'bold'), bg='#16213e', fg='#ffd700', justify=tk.LEFT).pack(side=tk.LEFT)
+        
+        self.tooltip_id = self.root.after(2000, self.hide_tooltip)
+    
+    def hide_tooltip(self, event=None):
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
+        if hasattr(self, 'tooltip_id'):
+            self.root.after_cancel(self.tooltip_id)
+    
     def on_mouse_move(self, event):
-        """Обработка движения мыши: наведение на машину и показ подсказки"""
-        if not self.detections:
+        if not self.detections or not self.show_detections_mode:
             return
         
         canvas_x = self.canvas.canvasx(event.x)
@@ -660,12 +596,10 @@ class DroneRAGSystem:
         if found != self.hover_detection:
             self.hover_detection = found
             self.update_display()
-            
             if found:
                 ru_names = {"car": "легковой автомобиль", "van": "фургон", "truck": "грузовик", "bus": "автобус", "motor": "мотоцикл"}
                 ru_name = ru_names.get(found['label'], found['label'])
                 tooltip_text = f"{ru_name.upper()}\nТип: {found['label']}\nТочность: {found['confidence']:.1%}"
-                # Показываем подсказку рядом с курсором
                 self.show_tooltip(event.x_root, event.y_root, tooltip_text)
             else:
                 self.hide_tooltip()
@@ -680,12 +614,14 @@ class DroneRAGSystem:
             self.canvas.yview_scroll(int(-event.delta / 120), "units")
     
     def zoom(self, factor):
+        self.fit_to_window = False
         new_zoom = self.zoom_level * factor
         if self.zoom_min <= new_zoom <= self.zoom_max:
             self.zoom_level = new_zoom
             self.update_display()
     
     def reset_view(self):
+        self.fit_to_window = True
         self.zoom_level = 1.0
         self.pan_x, self.pan_y = 0, 0
         self.update_display()
@@ -701,7 +637,6 @@ class DroneRAGSystem:
         self.pan_start_x, self.pan_start_y = event.x, event.y
         self.update_display()
 
-# ========== ЗАПУСК ==========
 if __name__ == "__main__":
     root = tk.Tk()
     app = DroneRAGSystem(root)
