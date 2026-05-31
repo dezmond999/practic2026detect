@@ -15,16 +15,14 @@ from sklearn.metrics.pairwise import cosine_similarity
 class DroneRAGSystem:
     def __init__(self, root):
         self.root = root
-        self.root.title("🚁 Мультимодальная RAG-система | Детекция машин + База знаний о БПЛА")
+        self.root.title("Мультимодальная RAG-система | Детекция машин + База знаний о БПЛА")
         self.root.geometry("1400x800")
         self.root.minsize(1000, 600)
         self.root.configure(bg='#1a1a2e')
         
-        # Модели
         self.model_yolo = None
         self.model_embedding = SentenceTransformer('paraphrase-MiniLM-L3-v2')
         
-        # Данные
         self.visdrone_ds = None
         self.original_image = None
         self.original_image_rgb = None
@@ -34,7 +32,6 @@ class DroneRAGSystem:
         self.tooltip_window = None
         self.show_detections_mode = True
         
-        # База знаний о дронах
         self.drone_knowledge = [
             {"id": 1, "name": "DJI Matrice 300 RTK", "description": "Профессиональный дрон для мониторинга грузовиков и автопарков. Оснащён тепловизором и ИИ-детекцией.", "specs": "Время полёта: 55 мин, Макс. скорость: 82 км/ч, Вес: 3.6 кг", "best_for": ["truck", "bus", "van"]},
             {"id": 2, "name": "Autel EVO II Pro", "description": "Отлично подходит для съёмки легковых автомобилей. Компактный складной дрон с 6K камерой.", "specs": "Время полёта: 40 мин, Макс. скорость: 72 км/ч, Вес: 1.1 кг", "best_for": ["car"]},
@@ -49,7 +46,6 @@ class DroneRAGSystem:
             text = f"{drone['name']} {drone['description']} {drone['specs']}"
             self.drone_embeddings.append(self.model_embedding.encode(text))
         
-        # Параметры интерфейса
         self.zoom_level = 1.0
         self.zoom_min = 0.5
         self.zoom_max = 5.0
@@ -57,7 +53,7 @@ class DroneRAGSystem:
         self.pan_start_x, self.pan_start_y = 0, 0
         self.fit_to_window = True
         
-        self.status_var = tk.StringVar(value="🔄 Загрузка YOLO модели...")
+        self.status_var = tk.StringVar(value="Загрузка YOLO модели...")
         
         self.load_models()
         self.setup_ui()
@@ -69,16 +65,16 @@ class DroneRAGSystem:
         def _load():
             try:
                 self.model_yolo = YOLO("best.pt")
-                self.status_var.set("✅ Модель готова! Классы: car, van, truck, bus, motor")
+                self.status_var.set("Модель готова")
             except Exception as e:
-                self.status_var.set(f"⚠️ Ошибка YOLO: {str(e)[:50]}...")
+                self.status_var.set(f"Ошибка YOLO: {str(e)[:50]}...")
         threading.Thread(target=_load, daemon=True).start()
     
     def load_visdrone_dataset(self):
         def _load():
             try:
                 self.visdrone_ds = deeplake.load('hub://activeloop/visdrone-det-train')
-                print(f"✅ VisDrone датасет готов")
+                print("VisDrone датасет готов")
             except Exception as e:
                 self.visdrone_ds = None
         threading.Thread(target=_load, daemon=True).start()
@@ -99,27 +95,26 @@ class DroneRAGSystem:
         right_panel = tk.Frame(main_frame, bg='#0f3460')
         right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
-        # Левая панель
-        tk.Label(left_panel, text="🚁 MULTIMODAL RAG SYSTEM", 
+        tk.Label(left_panel, text="MULTIMODAL RAG SYSTEM", 
                 font=('Arial', 14, 'bold'), bg='#16213e', fg='#e94560').pack(pady=15)
         tk.Label(left_panel, text="Детекция машин + База знаний о БПЛА", 
                 font=('Arial', 9), bg='#16213e', fg='#aaa').pack(pady=(0, 15))
         
-        tk.Label(left_panel, text="📸 1. ЗАГРУЗИТЕ ИЗОБРАЖЕНИЕ", 
+        tk.Label(left_panel, text="1. ЗАГРУЗИТЕ ИЗОБРАЖЕНИЕ", 
                 font=('Arial', 10, 'bold'), bg='#16213e', fg='#e94560').pack(anchor='w', padx=20, pady=(10,5))
         
         btn_frame = tk.Frame(left_panel, bg='#16213e')
         btn_frame.pack(fill=tk.X, padx=20, pady=5)
         
-        tk.Button(btn_frame, text="📸 ЗАГРУЗИТЬ ФОТО", 
+        tk.Button(btn_frame, text="ЗАГРУЗИТЬ ФОТО", 
                  font=('Arial', 10, 'bold'), bg='#e94560', fg='white',
                  command=self.load_image, height=1).pack(fill=tk.X, pady=2)
         
-        tk.Button(btn_frame, text="🛸 СЛУЧАЙНОЕ ФОТО ИЗ VISDRONE", 
+        tk.Button(btn_frame, text="СЛУЧАЙНОЕ ФОТО ИЗ VISDRONE", 
                  font=('Arial', 10, 'bold'), bg='#2c3e66', fg='white',
                  command=self.load_random_visdrone, height=1).pack(fill=tk.X, pady=2)
         
-        tk.Label(left_panel, text="🔍 2. ДЕТЕКЦИЯ МАШИН", 
+        tk.Label(left_panel, text="2. ДЕТЕКЦИЯ МАШИН", 
                 font=('Arial', 10, 'bold'), bg='#16213e', fg='#e94560').pack(anchor='w', padx=20, pady=(15,5))
         
         params_frame = tk.Frame(left_panel, bg='#16213e')
@@ -134,7 +129,7 @@ class DroneRAGSystem:
                 bg='#16213e', fg='white', highlightthickness=0).pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=5)
         
         self.tiling_enabled = tk.BooleanVar(value=False)
-        tk.Checkbutton(params_frame, text="✅ Использовать тайлинг (для мелких машин)",
+        tk.Checkbutton(params_frame, text="Использовать тайлинг (для мелких машин)",
                       variable=self.tiling_enabled, bg='#16213e', fg='white',
                       selectcolor='#16213e').pack(anchor='w', pady=5)
         
@@ -157,17 +152,17 @@ class DroneRAGSystem:
         detect_frame = tk.Frame(left_panel, bg='#16213e')
         detect_frame.pack(fill=tk.X, padx=20, pady=10)
         
-        self.detect_btn = tk.Button(detect_frame, text="🔍 НАЙТИ МАШИНЫ", 
+        self.detect_btn = tk.Button(detect_frame, text="НАЙТИ МАШИНЫ", 
                                    font=('Arial', 11, 'bold'), bg='#e94560', fg='white',
                                    command=self.detect_vehicles, height=1, state='disabled')
         self.detect_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
         
-        self.original_btn = tk.Button(detect_frame, text="🖼️ ПОКАЗАТЬ ОРИГИНАЛ", 
+        self.original_btn = tk.Button(detect_frame, text="ПОКАЗАТЬ ОРИГИНАЛ", 
                                      font=('Arial', 11, 'bold'), bg='#1a5c5e', fg='white',
                                      command=self.show_original, height=1, state='disabled')
         self.original_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
         
-        tk.Label(left_panel, text="💬 3. ЗАПРОС К БАЗЕ ЗНАНИЙ О БПЛА", 
+        tk.Label(left_panel, text="3. ЗАПРОС К БАЗЕ ЗНАНИЙ О БПЛА", 
                 font=('Arial', 10, 'bold'), bg='#16213e', fg='#e94560').pack(anchor='w', padx=20, pady=(15,5))
         
         self.query_text = tk.Text(left_panel, height=3, width=35, bg='#0f3460', fg='white',
@@ -178,26 +173,25 @@ class DroneRAGSystem:
         query_frame = tk.Frame(left_panel, bg='#16213e')
         query_frame.pack(fill=tk.X, padx=20, pady=5)
         
-        tk.Button(query_frame, text="🔎 ПОИСК В БАЗЕ БПЛА", 
+        tk.Button(query_frame, text="ПОИСК В БАЗЕ БПЛА", 
                  font=('Arial', 10, 'bold'), bg='#2c3e66', fg='white',
                  command=self.rag_search).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
         
-        tk.Button(query_frame, text="🎯 ПО РЕЗУЛЬТАТАМ ДЕТЕКЦИИ", 
+        tk.Button(query_frame, text="ПО РЕЗУЛЬТАТАМ ДЕТЕКЦИИ", 
                  font=('Arial', 10, 'bold'), bg='#1a5c5e', fg='white',
                  command=self.rag_search_by_detection).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=2)
         
-        tk.Label(left_panel, text="📡 РЕЗУЛЬТАТЫ RAG", 
+        tk.Label(left_panel, text="РЕЗУЛЬТАТЫ RAG", 
                 font=('Arial', 10, 'bold'), bg='#16213e', fg='#e94560').pack(anchor='w', padx=20, pady=(15,5))
         
         self.rag_result = tk.Text(left_panel, height=8, bg='#0f3460', fg='#ffd700',
-                                  font=('Arial', 9), relief=tk.FLAT, wrap=tk.WORD)
+                                  font=('Arial', 9), relief=tk.FLAT, wrap=tk.WORD, state=tk.DISABLED)
         self.rag_result.pack(fill=tk.X, padx=20, pady=5)
         self.rag_result.insert("1.0", "Результаты поиска появятся здесь...")
         
         tk.Label(left_panel, textvariable=self.status_var, bg='#16213e', 
                 fg='#aaa', font=('Arial', 8)).pack(side=tk.BOTTOM, pady=10)
         
-        # Правая панель
         canvas_container = tk.Frame(right_panel, bg='#0f3460')
         canvas_container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -216,14 +210,14 @@ class DroneRAGSystem:
         stats_frame = tk.Frame(right_panel, bg='#1a1a2e', bd=2, relief=tk.RIDGE)
         stats_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=(0, 10))
         
-        tk.Label(stats_frame, text="📊 СТАТИСТИКА ДЕТЕКЦИИ", 
+        tk.Label(stats_frame, text="СТАТИСТИКА ДЕТЕКЦИИ", 
                 font=('Arial', 9, 'bold'), bg='#1a1a2e', fg='#e94560').pack(anchor='w', padx=5, pady=2)
         
         self.stats_var = tk.StringVar(value="Ожидание загрузки...")
         tk.Label(stats_frame, textvariable=self.stats_var, bg='#1a1a2e', fg='#00ff00',
                 font=('Consolas', 10, 'bold'), anchor='w', justify=tk.LEFT).pack(fill=tk.X, padx=5, pady=2)
         
-        tk.Label(right_panel, text="💡 Управление: Ctrl+колесо - зум | Правая кнопка - панорамирование | Наведите курсор на машину — появится подсказка",
+        tk.Label(right_panel, text="Управление: Ctrl+колесо - зум | Правая кнопка - панорамирование | Наведите курсор на машину — появится подсказка",
                 bg='#0f3460', fg='#aaa', font=('Arial', 9)).pack(side=tk.BOTTOM, pady=5)
     
     def setup_bindings(self):
@@ -258,7 +252,7 @@ class DroneRAGSystem:
             messagebox.showwarning("Ошибка", "VisDrone датасет ещё не загружен.")
             return
         
-        self.status_var.set("🔄 Загрузка случайного фото из VisDrone...")
+        self.status_var.set("Загрузка случайного фото из VisDrone...")
         
         def _load():
             try:
@@ -273,14 +267,14 @@ class DroneRAGSystem:
                 self.current_source = f"VisDrone датасет (изображение #{idx})"
                 self.load_and_process(temp_path)
             except Exception as e:
-                self.status_var.set(f"❌ Ошибка VisDrone: {str(e)[:50]}")
+                self.status_var.set(f"Ошибка VisDrone: {str(e)[:50]}")
         
         threading.Thread(target=_load, daemon=True).start()
     
     def load_and_process(self, path):
         self.original_image = cv2.imread(path)
         if self.original_image is None:
-            self.status_var.set("❌ Ошибка загрузки")
+            self.status_var.set("Ошибка загрузки")
             return
         
         self.original_image_rgb = cv2.cvtColor(self.original_image, cv2.COLOR_BGR2RGB)
@@ -292,7 +286,7 @@ class DroneRAGSystem:
         
         self.detect_btn.config(state='normal')
         self.original_btn.config(state='normal')
-        self.status_var.set(f"✅ {self.current_source}")
+        self.status_var.set(f"Загружено: {self.current_source}")
         
         self.update_stats()
         self.update_display()
@@ -302,8 +296,8 @@ class DroneRAGSystem:
             messagebox.showwarning("Ошибка", "Сначала загрузите фото!")
             return
         
-        self.detect_btn.config(state='disabled', text='⏳ ПОИСК...')
-        self.status_var.set("🔍 Поиск машин...")
+        self.detect_btn.config(state='disabled', text='ПОИСК...')
+        self.status_var.set("Поиск машин...")
         
         def _detect():
             try:
@@ -323,12 +317,12 @@ class DroneRAGSystem:
                 self.update_display()
                 
                 if detections:
-                    self.status_var.set(f"✅ Найдено машин: {len(detections)}")
+                    self.status_var.set(f"Найдено машин: {len(detections)}")
                 else:
-                    self.status_var.set("⚠️ Машин не найдено. Попробуйте понизить порог")
+                    self.status_var.set("Машин не найдено. Попробуйте понизить порог")
             except Exception as e:
-                self.status_var.set(f"❌ Ошибка: {str(e)[:80]}")
-            self.detect_btn.config(state='normal', text='🔍 НАЙТИ МАШИНЫ')
+                self.status_var.set(f"Ошибка: {str(e)[:80]}")
+            self.detect_btn.config(state='normal', text='НАЙТИ МАШИНЫ')
         
         threading.Thread(target=_detect, daemon=True).start()
     
@@ -434,47 +428,55 @@ class DroneRAGSystem:
     def rag_search(self):
         query = self.query_text.get("1.0", tk.END).strip()
         if not query:
+            self.rag_result.config(state=tk.NORMAL)
             self.rag_result.delete("1.0", tk.END)
             self.rag_result.insert("1.0", "Введите запрос!")
+            self.rag_result.config(state=tk.DISABLED)
             return
         
-        self.status_var.set("🔎 Поиск в базе знаний о БПЛА...")
+        self.status_var.set("Поиск в базе знаний о БПЛА...")
+        self.rag_result.config(state=tk.NORMAL)
         self.rag_result.delete("1.0", tk.END)
         
         query_embedding = self.model_embedding.encode(query)
         similarities = cosine_similarity([query_embedding], self.drone_embeddings)[0]
         best_indices = np.argsort(similarities)[::-1][:3]
         
-        result = f"🔍 По запросу: '{query}'\n\n"
+        result = f"По запросу: '{query}'\n\n"
         result += "=" * 50 + "\n\n"
         
         for i, idx in enumerate(best_indices):
             drone = self.drone_knowledge[idx]
             score = similarities[idx]
-            result += f"📍 {i+1}. {drone['name']} (релевантность: {score:.2%})\n"
-            result += f"   📝 {drone['description']}\n"
-            result += f"   ⚙️ {drone['specs']}\n"
-            result += f"   🎯 Лучше всего для: {', '.join(drone['best_for'])}\n\n"
+            result += f"{i+1}. {drone['name']} (релевантность: {score:.2%})\n"
+            result += f"   {drone['description']}\n"
+            result += f"   {drone['specs']}\n"
+            result += f"   Лучше всего для: {', '.join(drone['best_for'])}\n\n"
         
         self.rag_result.insert("1.0", result)
-        self.status_var.set("✅ Поиск завершён")
+        self.rag_result.config(state=tk.DISABLED)
+        self.status_var.set("Поиск завершён")
     
     def rag_search_by_detection(self):
         if not self.detections:
+            self.rag_result.config(state=tk.NORMAL)
             self.rag_result.delete("1.0", tk.END)
             self.rag_result.insert("1.0", "Сначала выполните детекцию машин!")
+            self.rag_result.config(state=tk.DISABLED)
             return
         
         vehicle_types = list(set([d['label'] for d in self.detections]))
         
         if not vehicle_types:
+            self.rag_result.config(state=tk.NORMAL)
             self.rag_result.delete("1.0", tk.END)
             self.rag_result.insert("1.0", "Машины не найдены. Попробуйте понизить порог уверенности.")
+            self.rag_result.config(state=tk.DISABLED)
             return
         
         query = f"какой дрон лучше для мониторинга {', '.join(vehicle_types)}"
         
-        self.status_var.set("🎯 Поиск дронов по результатам детекции...")
+        self.status_var.set("Поиск дронов по результатам детекции...")
         self.query_text.delete("1.0", tk.END)
         self.query_text.insert("1.0", query)
         
@@ -482,25 +484,27 @@ class DroneRAGSystem:
         similarities = cosine_similarity([query_embedding], self.drone_embeddings)[0]
         best_indices = np.argsort(similarities)[::-1][:3]
         
-        result = f"🛸 ПО РЕЗУЛЬТАТАМ ДЕТЕКЦИИ\n\n"
+        result = f"ПО РЕЗУЛЬТАТАМ ДЕТЕКЦИИ\n\n"
         result += f"Обнаружены типы машин: {', '.join(vehicle_types)}\n"
         result += "=" * 50 + "\n\n"
-        result += "📡 Рекомендуемые БПЛА:\n\n"
+        result += "Рекомендуемые БПЛА:\n\n"
         
         for i, idx in enumerate(best_indices):
             drone = self.drone_knowledge[idx]
             score = similarities[idx]
-            result += f"📍 {i+1}. {drone['name']} (совместимость: {score:.2%})\n"
-            result += f"   📝 {drone['description']}\n"
-            result += f"   ⚙️ {drone['specs']}\n\n"
+            result += f"{i+1}. {drone['name']} (совместимость: {score:.2%})\n"
+            result += f"   {drone['description']}\n"
+            result += f"   {drone['specs']}\n\n"
         
+        self.rag_result.config(state=tk.NORMAL)
         self.rag_result.delete("1.0", tk.END)
         self.rag_result.insert("1.0", result)
-        self.status_var.set("✅ Рекомендации по БПЛА готовы")
+        self.rag_result.config(state=tk.DISABLED)
+        self.status_var.set("Рекомендации по БПЛА готовы")
     
     def update_stats(self):
         if not self.detections:
-            self.stats_var.set("❌ Машины не найдены")
+            self.stats_var.set("Машины не найдены")
             return
         
         cars = sum(1 for d in self.detections if d['label'] == 'car')
@@ -510,7 +514,7 @@ class DroneRAGSystem:
         motors = sum(1 for d in self.detections if d['label'] == 'motor')
         total = len(self.detections)
         
-        stats = f"🚗 Легковых:{cars}  🚐 Фургонов:{vans}  🚚 Грузовиков:{trucks}  🚌 Автобусов:{buses}  🏍️ Мотоциклов:{motors}  📈 Всего:{total}"
+        stats = f"Легковых:{cars}  Фургонов:{vans}  Грузовиков:{trucks}  Автобусов:{buses}  Мотоциклов:{motors}  Всего:{total}"
         self.stats_var.set(stats)
     
     def update_display(self):
@@ -565,7 +569,7 @@ class DroneRAGSystem:
         inner = tk.Frame(frame, bg='#16213e', padx=10, pady=5)
         inner.pack()
         
-        tk.Label(inner, text="🚗", font=('Arial', 14), bg='#16213e', fg='#e94560').pack(side=tk.LEFT, padx=(0,5))
+        tk.Label(inner, text="Авто", font=('Arial', 14), bg='#16213e', fg='#e94560').pack(side=tk.LEFT, padx=(0,5))
         tk.Label(inner, text=text, font=('Arial', 9, 'bold'), bg='#16213e', fg='#ffd700', justify=tk.LEFT).pack(side=tk.LEFT)
         
         self.tooltip_id = self.root.after(2000, self.hide_tooltip)
