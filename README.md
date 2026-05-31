@@ -57,8 +57,10 @@
 
 ### ПОРЯДОК ЗАПУСКА
 Клонируем репозиторий
+```
 git clone https://github.com/dezmond999/practic2026detect
 cd practic2026detect
+```
 ### Ставим библиотеки
 ------------------
 ```bash
@@ -68,3 +70,4 @@ pip install ultralytics opencv-python Pillow numpy sentence-transformers scikit-
 ```bash
 python detection.py
 ```
+###Приятного пользования!
