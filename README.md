@@ -70,4 +70,5 @@ pip install ultralytics opencv-python Pillow numpy sentence-transformers scikit-
 ```bash
 python detection.py
 ```
-###Приятного пользования!
+### Не бойтесь, долгая загрузка библиотек и при запуска файла это НОРМАЛЬНО!
+### Приятного пользования!
